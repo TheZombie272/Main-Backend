@@ -27,53 +27,80 @@ def main():
     parser.add_argument("--", dest="dash", help=argparse.SUPPRESS)
     known, extras = parser.parse_known_args()
 
-    base = Path(__file__).resolve().parent
-    data_dir = base / "Data-reorganizate"
-
-    if not data_dir.exists():
-        print(f"Data directory not found: {data_dir}")
-        sys.exit(2)
-
-    reorganized = data_dir / "asset_inventory_reorganized.txt"
-    if reorganized.exists():
-        print(f"Removing existing file: {reorganized}")
-        try:
-            reorganized.unlink()
-        except Exception as e:
-            print(f"Failed to remove {reorganized}: {e}")
-            sys.exit(3)
-
-    # Run reorganize_assets.py
-    reorganize_script = data_dir / "reorganize_assets.py"
-    if not reorganize_script.exists():
-        print(f"Reorganize script not found: {reorganize_script}")
-        sys.exit(4)
-
-    print(f"Running reorganize script: {reorganize_script}")
+    runner = PipelineRunner()
+    # The legacy CLI always executes the send step; pass-through extras are
+    # forwarded to the send script.
     try:
-        subprocess.run([sys.executable, str(reorganize_script)], check=True)
+        runner.run(extras=extras)
     except subprocess.CalledProcessError as e:
-        print(f"reorganize_assets.py failed with exit {e.returncode}")
+        # preserve original exit codes for compatibility with existing callers
+        print(f"Pipeline failed with exit {e.returncode}")
         sys.exit(e.returncode)
 
-    # Run send_batches.py with --execute and pass-through extras
-    send_script = data_dir / "send_batches.py"
-    if not send_script.exists():
-        print(f"Send script not found: {send_script}")
-        sys.exit(5)
 
-    cmd = [sys.executable, str(send_script), "--execute"]
-    if extras:
-        cmd += extras
+class PipelineRunner:
+    """Encapsulate the pipeline so it can be invoked programmatically.
 
-    print("Running send_batches:", " ".join(cmd))
-    try:
+    Usage:
+      runner = PipelineRunner(base=Path("/path/to/scripts"))
+      runner.run(extras=["--limit-batches", "1"], execute=False)
+    """
+
+    def __init__(self, base: Path | None = None):
+        self.base = (Path(base).resolve() if base is not None else Path(__file__).resolve().parent)
+        self.data_dir = self.base / "Data-reorganizate"
+        self.reorganized = self.data_dir / "asset_inventory_reorganized.txt"
+        self.reorganize_script = self.data_dir / "reorganize_assets.py"
+        self.send_script = self.data_dir / "send_batches.py"
+
+    def _ensure_data_dir(self):
+        if not self.data_dir.exists():
+            raise FileNotFoundError(f"Data directory not found: {self.data_dir}")
+
+    def _remove_reorganized(self):
+        if self.reorganized.exists():
+            try:
+                self.reorganized.unlink()
+            except Exception as e:
+                raise RuntimeError(f"Failed to remove {self.reorganized}: {e}")
+
+    def _run_reorganize(self):
+        if not self.reorganize_script.exists():
+            raise FileNotFoundError(f"Reorganize script not found: {self.reorganize_script}")
+        subprocess.run([sys.executable, str(self.reorganize_script)], check=True)
+
+    def _run_send(self, extras: list[str] | None = None, execute: bool = True):
+        if not self.send_script.exists():
+            raise FileNotFoundError(f"Send script not found: {self.send_script}")
+        cmd = [sys.executable, str(self.send_script)]
+        if execute:
+            cmd.append("--execute")
+        # Some callers pass a literal '--' to separate args; strip a leading
+        # '--' if present so the downstream parser doesn't treat it as a value.
+        if extras:
+            if len(extras) > 0 and extras[0] == "--":
+                extras = extras[1:]
+            cmd += extras
         subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"send_batches.py failed with exit {e.returncode}")
-        sys.exit(e.returncode)
 
-    print("Pipeline completed successfully.")
+    def run(self, extras: list[str] | None = None, execute: bool = True):
+        """Run the pipeline.
+
+        - `extras` are forwarded to `send_batches.py`.
+        - `execute` controls whether `--execute` is passed to the send script.
+        """
+        self._ensure_data_dir()
+        # remove old reorganized file if present
+        if self.reorganized.exists():
+            print(f"Removing existing file: {self.reorganized}")
+            self._remove_reorganized()
+
+        print(f"Running reorganize script: {self.reorganize_script}")
+        self._run_reorganize()
+
+        print("Running send_batches")
+        self._run_send(extras=extras, execute=execute)
+
 
 
 if __name__ == "__main__":
