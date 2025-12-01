@@ -32,7 +32,7 @@ async def _run_download_script(extras: Optional[List[str]] = None) -> dict:
 
 
 @router.post("/download-inventory")
-async def download_inventory(wait: bool = True, csv: Optional[str] = None):
+async def download_inventory(wait: bool = True, csv: Optional[str] = None, app_token: Optional[str] = None):
     """Trigger download_asset_inventory.py.
 
     - `wait` (bool): if true (default) the endpoint waits for the subprocess to finish and
@@ -49,6 +49,8 @@ async def download_inventory(wait: bool = True, csv: Optional[str] = None):
     extras: List[str] = []
     if csv:
         extras += ["--csv", csv]
+    if app_token:
+        extras += ["--app-token", app_token]
 
     if wait:
         result = await _run_download_script(extras or None)

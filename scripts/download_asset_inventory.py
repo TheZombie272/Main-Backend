@@ -74,13 +74,20 @@ def fetch_page(_session, offset: int, limit: int, app_token: Optional[str] = Non
     query = urllib.parse.urlencode(params)
     base = base_url or BASE_URL
     url = base + "?" + query
-    req = urllib.request.Request(url)
+    # Add a sensible User-Agent to avoid simple request blocks
+    headers = {"User-Agent": "Main-Backend/1.0 (+https://github.com/TheZombie272/Main-Backend)"}
     if app_token:
-        req.add_header("X-App-Token", app_token)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = resp.read()
-        text = data.decode("utf-8")
-        return json.loads(text)
+        headers["X-App-Token"] = app_token
+
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = resp.read()
+            text = data.decode("utf-8")
+            return json.loads(text)
+    except urllib.error.HTTPError:
+        # Re-raise to be handled by caller but keep original message
+        raise
 
 
 def download_all(out_path: str, page_size: int = DEFAULT_PAGE_SIZE, app_token: Optional[str] = None, max_retries: int = 5, backoff_base: float = 1.5, base_url: Optional[str] = None) -> List[Dict[str, Any]]:
