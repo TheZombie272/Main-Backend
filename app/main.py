@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.api_v1.api import api_router
 
@@ -28,6 +28,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.options("/{full_path:path}")
+async def _preflight_handler(full_path: str):
+    """Fallback handler for CORS preflight requests.
+
+    This returns 200 for any OPTIONS request so that browsers receive a
+    successful preflight response even if the router or a proxy blocks
+    OPTIONS. CORSMiddleware will still add the appropriate CORS headers.
+    """
+    return Response(status_code=200)
+
 
 app.include_router(api_router, prefix="/api/v1")
 
