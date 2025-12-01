@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.api_v1.api import api_router
 
 import asyncio
@@ -11,6 +12,23 @@ from pathlib import Path
 app = FastAPI(title="Main-Backend")
 
 app.include_router(api_router, prefix="/api/v1")
+# Configure CORS to respond to browser preflight (OPTIONS) requests.
+# Allow origins can be configured via the environment variable
+# `CORS_ALLOW_ORIGINS` as a comma-separated list. If not set, allow
+# `https://datacensus.site` by default (adjust as needed).
+cors_env = os.environ.get("CORS_ALLOW_ORIGINS")
+if cors_env:
+    allow_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
+else:
+    allow_origins = ["https://datacensus.site"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def _run_pipeline_script(extras: list[str] | None = None) -> int:
