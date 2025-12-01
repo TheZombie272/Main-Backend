@@ -40,7 +40,8 @@ def basic_prefilter(records):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--webhook", default="https://uzuma.duckdns.org/webhook/28f6ad24-074c-4914-84a5-695e2eff505d")
+    parser.add_argument("--webhook", default=os.environ.get("WEBHOOK_URL", "https://uzuma.duckdns.org/webhook/28f6ad24-074c-4914-84a5-695e2eff505d"),
+                        help="Webhook URL (or set env WEBHOOK_URL)")
     parser.add_argument("--batch-size", type=int, default=100)
     parser.add_argument("--type")
     # Compute default path to asset_inventory.csv located at project root

@@ -65,14 +65,15 @@ except Exception:
 
     requests = _RequestsModuleLike()
 
-BASE_URL = "https://www.datos.gov.co/resource/uzcf-b9dh.json"
+BASE_URL = os.environ.get('ASSET_INVENTORY_URL', "https://www.datos.gov.co/resource/uzcf-b9dh.json")
 DEFAULT_PAGE_SIZE = 1000
 
 
-def fetch_page(_session, offset: int, limit: int, app_token: Optional[str] = None, timeout: int = 30) -> List[Dict[str, Any]]:
+def fetch_page(_session, offset: int, limit: int, app_token: Optional[str] = None, timeout: int = 30, base_url: Optional[str] = None) -> List[Dict[str, Any]]:
     params = {"$limit": limit, "$offset": offset}
     query = urllib.parse.urlencode(params)
-    url = BASE_URL + "?" + query
+    base = base_url or BASE_URL
+    url = base + "?" + query
     req = urllib.request.Request(url)
     if app_token:
         req.add_header("X-App-Token", app_token)
@@ -82,7 +83,7 @@ def fetch_page(_session, offset: int, limit: int, app_token: Optional[str] = Non
         return json.loads(text)
 
 
-def download_all(out_path: str, page_size: int = DEFAULT_PAGE_SIZE, app_token: Optional[str] = None, max_retries: int = 5, backoff_base: float = 1.5) -> List[Dict[str, Any]]:
+def download_all(out_path: str, page_size: int = DEFAULT_PAGE_SIZE, app_token: Optional[str] = None, max_retries: int = 5, backoff_base: float = 1.5, base_url: Optional[str] = None) -> List[Dict[str, Any]]:
     session = None
     offset = 0
     all_records: List[Dict[str, Any]] = []
@@ -92,7 +93,7 @@ def download_all(out_path: str, page_size: int = DEFAULT_PAGE_SIZE, app_token: O
         while True:
             try:
                 print(f"Fetching offset={offset} limit={page_size} ...", flush=True)
-                page = fetch_page(session, offset=offset, limit=page_size, app_token=app_token)
+                page = fetch_page(session, offset=offset, limit=page_size, app_token=app_token, base_url=base_url)
                 break
             except Exception as e:
                 tries += 1
@@ -162,11 +163,13 @@ def main():
     parser.add_argument('--csv', help='Also write CSV to this path (e.g. asset_inventory.csv)')
     parser.add_argument('--page-size', type=int, default=DEFAULT_PAGE_SIZE, help='Page size (default 1000)')
     parser.add_argument('--app-token', default=os.environ.get('SODATA_APP_TOKEN') or os.environ.get('SODATA_TOKEN'), help='Socrata app token (or env SODATA_APP_TOKEN)')
+    parser.add_argument('--base-url', default=os.environ.get('ASSET_INVENTORY_URL'), help='Asset Inventory base URL (or env ASSET_INVENTORY_URL)')
     parser.add_argument('--max-retries', type=int, default=5, help='Retries per page on failure')
     args = parser.parse_args()
 
     print('Downloading Asset Inventory from datos.gov.co')
-    print(f'Base URL: {BASE_URL}')
+    base_url = args.base_url or BASE_URL
+    print(f'Base URL: {base_url}')
     if args.app_token:
         print('Using app token from argument or environment')
 

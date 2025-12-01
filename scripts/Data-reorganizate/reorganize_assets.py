@@ -99,6 +99,7 @@ def main():
         for rec in filtered:
             uid = (rec.get("uid") or "").strip()
             name = (rec.get("name") or "").strip()
+            department = (rec.get("department") or "").strip()
             line1 = f"{uid}-{name}"
 
             description = (rec.get("description") or "").replace("\n", " ").strip()
