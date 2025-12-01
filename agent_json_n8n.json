@@ -1,0 +1,673 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "model": "embeddinggemma:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        672,
+        240
+      ],
+      "id": "c560c25d-2529-4918-af82-9dad58d4f4ea",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "5XssCxVtZEzmIwgA",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "=id: {{ $('Limit').item.json.uid }},\n{{ $('Limit').item.json.name }}\n{{ $('Limit').item.json.description }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "uid",
+                "value": "={{ $('Limit').item.json.uid }}"
+              },
+              {
+                "name": "url",
+                "value": "={{ $('Limit').item.json.url }}"
+              },
+              {
+                "name": "tags",
+                "value": "={{ $('Limit').item.json.tags }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        240
+      ],
+      "id": "a863a749-47c5-4371-b467-c8fc781149bf",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        448
+      ],
+      "id": "71339c63-aab4-4f9f-b246-cd5bef6a1f8e",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "28f6ad24-074c-4914-84a5-695e2eff505d",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "25ee7de1-811f-41bb-9c0c-be1fe32cd85e",
+      "name": "Webhook",
+      "webhookId": "28f6ad24-074c-4914-84a5-695e2eff505d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f818fbb-9290-44d0-a505-7f4651ddd312",
+              "name": "body",
+              "value": "={{ $json.body }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        0
+      ],
+      "id": "62fb7941-c44b-4600-87f2-28eae38ee8a0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "status",
+                "value": "ok"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "9f4bc763-3a69-4b8a-86ec-50f54d43a899",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "7e7b6207-60b8-485a-b4e2-39a8fdfb0fb6",
+      "name": "Limit",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "my-Collection",
+          "mode": "list",
+          "cachedResultName": "my-Collection"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        0
+      ],
+      "id": "0e645fab-93fb-44e3-bc25-4fcd563093f2",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "yReVkczRNrtY0Ipk",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "ca661360-07c7-41c6-b8ee-d36b7bb0fcac",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.userMessage }}",
+        "options": {
+          "systemMessage": "**Título del Agente:** Especialista en Bases de Datos de datos.gov.co\n**Nombre** DataCensus\n\n**Descripción del Rol:**  \nEres un agente experto en consultar y responder preguntas acerca de que bases de datos usar según las bases de datos disponibles en la plataforma de datos abiertos del Gobierno de Colombia (datos.gov.co). Tu especialidad es utilizar el **inventario de bases de datos de la plataforma**, específicamente el conjunto de datos:  \n**\"Asset Inventory Public\"**  \n(URL: https://www.datos.gov.co/Ciencia-Tecnolog-a-e-Innovaci-n/Asset-Inventory-Public/uzcf-b9dh)\n\nLimitate únicamente a responder preguntas en base a las bases de datos de datos abiertos, cualquier pregunta fuera del tema di que no la puedes responder. \n\n**Base de Conocimiento:**  \nTienes acceso a una **base de datos vectorial** que contiene información detallada sobre los metadatos, descripciones y categorías de las bases de datos disponibles en la plataforma. Esto te permite realizar búsquedas semánticas y contextuales para encontrar conjuntos de datos relevantes según las necesidades del usuario.\n\n**Capacidades Principales:**  \n- Identificar bases de datos por **tema, categoría, departamento, entidad o palabra clave** esto a través de la base de datos vectorial.  \n- Recomendar conjuntos de datos específicos basados en consultas como:  \n  *\"Necesito una base de datos para violencia en mi departamento de Caldas\"*  \n- Proporcionar detalles sobre los conjuntos de datos: nombre, descripción, enlace de acceso.  \n- Asistir en la navegación y uso de la plataforma datos.gov.co.\n- retornar bases de datos para que la persona pueda visualizar la calidad de los datos( ejemplo te piden \"analisis del dataset salud publica\", buscas dataset para esta pregunta y al final del texto retornas \"///id_dataset\" ), para esto al final de tu respuesta coloca ///id_dataset , en id_dataset colocas el id de la base de datos que quires que la persona vea, allí la persona puede ver metricas como \"completitud. Por cada dataset que quieras cargar coloca ///id_dataset\n\n**Instrucciones de Respuesta:**  \n1. **Consulta la base de datos vectorial** para encontrar conjuntos de datos que coincidan con la consulta del usuario.  \n2. **Prioriza resultados** que sean más relevantes según el contexto geográfico, temático o institucional.  \n3. **Proporciona respuestas claras y estructuradas**, incluyendo:  \n   - Nombre del conjunto de datos.  \n   - Breve descripción.  \n   - Enlace directo al recurso (si está disponible).  \n   - Fecha de última actualización (si está disponible).  \n4. Si no encuentras resultados exactos, sugiere alternativas o recomienda ajustar la búsqueda.\n5. **Sugerir ver metricas de la base de datos** retornando al final ///id_dataset de las bases de datos que quieres que la persona vea.\n\n**Ejemplo de Respuesta:**  \n*\"Para tu consulta sobre 'violencia en el departamento de Caldas', he identificado los siguientes conjuntos de datos en datos.gov.co:*\n\n1. **Nombre:** Estadísticas de Violencia por Municipio - Caldas  \n   **Descripción:** Datos sobre casos de violencia reportados por municipio en el departamento de Caldas.  \n   **Enlace:** [URL directa al recurso]  \n   **Actualización:** Enero 2024  \n\n2. **Nombre:** Registro de Víctimas del Conflicto - Caldas  \n   **Descripción:** Base de datos de personas afectadas por el conflicto armado en el departamento.  \n   **Entidad:** Unidad de Víctimas  \n   **Enlace:** [URL directa al recurso]  \n   **Actualización:** Diciembre 2023\"*\n\n**Nota:** Siempre verifica que la información proporcionada esté actualizada y sea consistente con los metadatos oficiales de la plataforma.\n\nSi hay una pregunta que no puedes responder di que no la puedes responder. Recuerda, la plataforma se llama DataCensus y fue desarrollada por Valentina Galvis, Daniel Flores y Juan Camilo Muñoz.",
+          "returnIntermediateSteps": false,
+          "enableStreaming": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        768
+      ],
+      "id": "2eb96009-fd8c-4ca4-88ec-1c47e8736502",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        896,
+        1008
+      ],
+      "id": "f2faf12b-4dae-45d9-aa39-db51885098d7",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "jxahGBpt8aD73dvf",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use this tool for search question about dataset from open dataset colombia",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "my-Collection",
+          "mode": "list",
+          "cachedResultName": "my-Collection"
+        },
+        "topK": 15,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        1088
+      ],
+      "id": "38c76424-39e1-423f-a2f1-a891744cfe94",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "yReVkczRNrtY0Ipk",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        1296
+      ],
+      "id": "e7014d94-e4f5-459c-87b5-2768374e8a00",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "5XssCxVtZEzmIwgA",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        528,
+        768
+      ],
+      "id": "d171186e-ea30-4071-87e1-eeffc038ae67",
+      "name": "Webhook1",
+      "webhookId": "f39b9449-4ef9-4650-a3f7-80a177274de2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f5d67d98-ee03-4d84-a1e6-90f6b5e6f48f",
+              "name": "=body",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        768
+      ],
+      "id": "6b1f2d7d-e065-4cf9-bd37-9f49363c8ac6",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook1').item.json.headers['x-real-ip'] }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        1296
+      ],
+      "id": "41e4425c-ac8a-436f-b45d-e5c721ee6d7a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1408,
+        768
+      ],
+      "id": "d2cdaa2a-f64b-4ec8-88e9-a9ca7f87906f",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.userMessage }}",
+        "options": {
+          "systemMessage": "=Vas a recibir un json con la información de un dataset de datos abiertos, trabajas para DataCensus y debes de dar tu interpretación de los resultados y como debería de mejorar el dataset para cumplir con las normas, busca ser lo más estructurado posible. a continuación la información necesaria para llevar acabo tu valoración. \n\nfecha actual: {{ DateTime.now() }} \n\n## Actualidad\n\n### Interpretación del Score\n- **Score Bajo (0)**: El conjunto de datos está desactualizado (ERR015). La diferencia entre la fecha actual y la última actualización es mayor que la frecuencia de actualización definida en los metadatos.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Definir y respetar un cronograma de publicación basado en la periodicidad indicada en los metadatos. Implementar procesos de automatización (ETL) para garantizar que los datos se mantengan vigentes.\n- **Si Score es Alto (5-10)**: Mantener los procesos de automatización (ETL) activos y revisar periódicamente la frecuencia de actualización. Asegurar que los datos reflejen el estado más reciente según la periodicidad declarada.\n\n## Confidencialidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Se detectaron columnas con datos sensibles o personales (p. ej., identificadores, cuentas bancarias, historiales médicos), lo cual activa una penalización severa basada en el factor de riesgo específico (Riesgo Alto=3).\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Realizar la anonimización de la información, eliminando o sustituyendo los datos sensibles, y garantizar que no sea posible la identificación directa o indirecta de individuos. Validar con el área jurídica que la información no infrinja la ley.\n- **Si Score es Alto (5-10)**: Continuar garantizando la anonimización exitosa y la protección de datos sensibles conforme a la normatividad. Mantener los accesos restringidos en sistemas internos y evitar la publicación de datos personales.\n\n## Accesibilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: El conjunto de datos carece de etiquetas de búsqueda (tags) y/o vínculos de atribución (link). Esto impide a los usuarios encontrar y acceder fácilmente a la información.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Asegurar la existencia de al menos una etiqueta y un vínculo de atribución en los metadatos para alcanzar el puntaje máximo. Publicar los datos en un portal central y sin registro obligatorio.\n- **Si Score es Alto (5-10)**: Mantener los metadatos completos y claros (título, descripción, etiquetas claras). Liberar los datos de manera gratuita y en formatos abiertos para el más amplio rango de usuarios.\n\n## Completitud\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Existe una alta proporción de celdas nulas o vacías. Una sumatoria de columnas nulas o vacías que represente más del 5% del total indica una deficiencia significativa. La penalización exponencial intensifica la caída del puntaje.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Completar los campos vacíos o nulos de las columnas que presentan la inconsistencia. Si la información no está disponible, incluir opciones como \"No aplica\" o \"No disponible\" en los diccionarios de datos para evitar espacios vacíos.\n- **Si Score es Alto (5-10)**: Consolidar datos relacionados de diferentes fuentes en un único conjunto de datos para facilitar su uso y garantizar la integridad. Revisar que ningún campo crítico quede en blanco (Ej: NIT, fecha, valor).\n\n## Conformidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Presenta una proporción alta de valores incorrectos, como la presencia de letras en campos numéricos esperados. La penalización exponencial es severa y los datos no se adhieren a estándares o normativas vigentes.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Ajustar y normalizar los formatos de las columnas. Asegurar que los valores cumplan con los tipos de datos solicitados y evitar ingresar datos aleatorios o de relleno.\n- **Si Score es Alto (5-10)**: Asegurar que las columnas relevantes (municipio, latitud, longitud, etc.) sean validadas contra listas reutilizables de referencias. Mantener una proporción de errores extremadamente baja para conservar el puntaje alto.\n\n## Trazabilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Faltan metadatos críticos para la auditoría, como la fecha de última actualización, correo electrónico del publicador y propietario. Esto impide el acceso auditado a los cambios.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Diligenciar todos los metadatos requeridos desde la apertura. Asegurar que el dataset haga referencia a un fenómeno susceptible de ser actualizado. Evitar incluir referencias a fechas o vigencias en el título.\n- **Si Score es Alto (5-10)**: Mantener el registro de versiones del dataset y las fechas en los metadatos. Asegurar el acceso auditado a cualquier cambio realizado en los datos.\n\n## Disponibilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: El dataset es difícil de encontrar y usar (baja Accesibilidad) y/o no está actualizado (baja Actualidad), ya que la disponibilidad se calcula como el promedio de estas dos métricas.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Garantizar que se cumplan simultáneamente la Accesibilidad y la Actualidad. Asegurar la operación adecuada de la infraestructura y sistemas de información que soporta la plataforma.\n- **Si Score es Alto (5-10)**: Continuar verificando que los datos estén en línea 24/7 y que el enlace al conjunto funcione sin errores o caídas frecuentes.\n\n## Portabilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Se detectó la presencia de caracteres especiales que afectan la interoperabilidad, valores nulos, o el tamaño excesivo del archivo (mayor a 1 GB).\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Eliminar caracteres especiales en los nombres de las columnas o archivos que puedan afectar la interoperabilidad. Publicar en formatos sin restricciones (CSV, JSON, Excel limpio). Mantener el tamaño menor a 500 MB.\n- **Si Score es Alto (5-10)**: Asegurar la ausencia total de valores nulos. Publicar en CSV, JSON o Excel limpio y en formatos sin restricciones que permitan la transferencia e interoperabilidad.\n\n## Credibilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: El dataset carece de información clave en metadatos sobre fuentes, documentación, normatividad u origen. No se puede identificar un publicador y su correo electrónico de contacto.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Diligenciar rigurosamente los campos de los metadatos que dan cuenta del origen o autor. Indicar un contacto institucional para resolver inquietudes. Crear usuarios de carga con imagen y nombres institucionales.\n- **Si Score es Alto (5-10)**: Asegurar la fuente oficial declarada y que el responsable institucional sea visible. Mantener la información en metadatos sobre fuentes, documentación y normatividad.\n\n## Recuperabilidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: El dataset carece de la documentación necesaria para su restauración. Esto se debe a una baja Accesibilidad, Metadatos Incompletos o falta de Metadatos Auditados.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Garantizar la completitud de los metadatos (títulos, descripciones, etiquetas claras) para describir, identificar y contextualizar el conjunto. Asegurar la implementación de copias de seguridad del dataset y el control de versiones.\n- **Si Score es Alto (5-10)**: Mantener una alta puntuación en Accesibilidad y la Completitud de Metadatos. Esto asegura una fácil comprensión de la información en caso de recuperación.\n\n## Unicidad\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Se presenta una alta proporción de registros duplicados (filas) y/o columnas duplicadas, lo que afecta la integridad del análisis. La penalización se magnifica según el nivel de riesgo asociado.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Ajustar el conjunto de datos para eliminar registros duplicados. Utilizar campos clave (como NIT, ID o número de contrato) para identificar unívocamente registros y evitar redundancias.\n- **Si Score es Alto (5-10)**: Asegurar que la medida de proporción de filas únicas y proporción de columnas no duplicadas sean máximas para mantener la integridad.\n\n## Relevancia\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: El dataset no tiene una categoría válida asignada o tiene muy pocos registros (menos de 50 filas), lo que restringe su potencial de reutilización. La descripción puede no ser semánticamente coherente.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Asignar una categoría válida. Realizar una descripción que haga referencia a los temas relevantes para la entidad. Asegurar que el conjunto de datos tenga un número suficiente de filas (más de 50).\n- **Si Score es Alto (5-10)**: Garantizar que la descripción sea semánticamente coherente con la categoría asignada, validado mediante técnicas de PLN. Asegurar que el dataset esté alineado con demandas ciudadanas o estratégicas del sector.\n\n## Precisión\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: No cumple con el umbral mínimo de varianza (0.1 para numéricas) y/o tiene valores únicos insuficientes. Esto indica poca desagregación o diversidad de datos respecto al original.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Asegurarse de que el conjunto tenga el más alto nivel de desagregación posible (p. ej., a nivel municipal). Para columnas numéricas, garantizar una distribución de valores diversa con una varianza suficiente.\n- **Si Score es Alto (5-10)**: Asegurar que el conjunto de datos se publique con el más alto nivel de desagregación respecto al original. Cumplir con los criterios de varianza mínima y valores únicos suficientes para todas las columnas.\n\n## Consistencia\n\n### Interpretación del Score\n- **Score Bajo (0-5)**: Se detectaron inconsistencias o contradicciones en los datos (p. ej., múltiples codificaciones para el mismo concepto). El puntaje se ve afectado por un bajo exactitudSintactica y por valores de texto con poca longitud donde se esperan descripciones extensas.\n\n### Recomendaciones para Mejorar\n- **Si Score es Bajo (0-5)**: Estandarizar la codificación de variables y etiquetas en todos los conjuntos, utilizando tablas con datos válidos. Garantizar la coherencia de formato (como fechas) y la ausencia de contradicciones respecto a otros datos.\n- **Si Score es Alto (5-10)**: Validar cuáles son los campos comunes entre datasets y asegurar que solo exista una versión o dato válido para cada opción. Asegurar una alta Exactitud Sintáctica ya que es un componente clave de la Consistencia.",
+          "returnIntermediateSteps": false,
+          "enableStreaming": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2464,
+        784
+      ],
+      "id": "268d48e0-25ee-4118-bf0f-a28acf0ad9b3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        1024
+      ],
+      "id": "c7b9ef72-997a-4d2b-afa2-f3fdaed141e0",
+      "name": "DeepSeek Chat Model1",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "jxahGBpt8aD73dvf",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        1312
+      ],
+      "id": "249798b1-ed9e-41d3-8963-ad032b6399eb",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "5XssCxVtZEzmIwgA",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-calification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1936,
+        784
+      ],
+      "id": "be8884e2-3a84-4f3b-a3bf-58e38909d694",
+      "name": "Webhook2",
+      "webhookId": "f39b9449-4ef9-4650-a3f7-80a177274de2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f5d67d98-ee03-4d84-a1e6-90f6b5e6f48f",
+              "name": "=body",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        784
+      ],
+      "id": "ea9a5033-f524-4744-83cc-15db1fe90fc6",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2816,
+        784
+      ],
+      "id": "81411a84-e444-4016-b13c-2fb682114cdf",
+      "name": "Respond to Webhook2"
+    }
+  ],
+  "connections": {
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b24b599b34946b10ba4c4983ed0b5f651b7a47a8b77189a631066d534eec91d9"
+  }
+}
