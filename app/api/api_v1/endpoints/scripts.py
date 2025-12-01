@@ -7,10 +7,10 @@ from typing import List, Optional
 router = APIRouter()
 
 
-async def _run_download_script(extras: Optional[List[str]] = None) -> dict:
+async def _run_download_script(extras: Optional[List[str]] = None, script_name: str = "download_asset_inventory.py") -> dict:
     # Compute repository root (Main-Backend/) relative to this file
     base = Path(__file__).resolve().parents[4]
-    script = base / "scripts" / "download_asset_inventory.py"
+    script = base / "scripts" / script_name
     if not script.exists():
         return {"code": 3, "stdout": "", "stderr": f"Script not found: {script}"}
 
@@ -32,7 +32,7 @@ async def _run_download_script(extras: Optional[List[str]] = None) -> dict:
 
 
 @router.post("/download-inventory")
-async def download_inventory(wait: bool = True, csv: Optional[str] = None, app_token: Optional[str] = None):
+async def download_inventory(wait: bool = True, csv: Optional[str] = None, app_token: Optional[str] = None, no_token: bool = False):
     """Trigger download_asset_inventory.py.
 
     - `wait` (bool): if true (default) the endpoint waits for the subprocess to finish and
@@ -40,20 +40,23 @@ async def download_inventory(wait: bool = True, csv: Optional[str] = None, app_t
       the endpoint returns the started pid information.
     - `csv` (optional): pass a CSV path to the script (maps to `--csv` argument).
     """
-    # If running in wait mode, run and await result
+    # Decide which script to run: standard (with token) or no-token paginating downloader
+    script_name = "download_no_token.py" if no_token else "download_asset_inventory.py"
     base = Path(__file__).resolve().parents[4]
-    script = base / "scripts" / "download_asset_inventory.py"
+    script = base / "scripts" / script_name
     if not script.exists():
         raise HTTPException(status_code=404, detail=f"Script not found: {script}")
 
     extras: List[str] = []
+    # map csv param
     if csv:
         extras += ["--csv", csv]
-    if app_token:
+    # app_token only relevant for the token-based script; pass as --app-token when provided
+    if app_token and not no_token:
         extras += ["--app-token", app_token]
 
     if wait:
-        result = await _run_download_script(extras or None)
+        result = await _run_download_script(extras or None, script_name=script_name)
         return result
 
     # Launch in background without awaiting
