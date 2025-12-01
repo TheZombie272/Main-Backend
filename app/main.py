@@ -11,7 +11,6 @@ from pathlib import Path
 
 app = FastAPI(title="Main-Backend")
 
-app.include_router(api_router, prefix="/api/v1")
 # Configure CORS to respond to browser preflight (OPTIONS) requests.
 # Allow origins can be configured via the environment variable
 # `CORS_ALLOW_ORIGINS` as a comma-separated list. If not set, allow
@@ -20,7 +19,7 @@ cors_env = os.environ.get("CORS_ALLOW_ORIGINS")
 if cors_env:
     allow_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
 else:
-    allow_origins = ["https://datacensus.site"]
+    allow_origins = ["https://datacensus.site", "https://www.datacensus.site"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,6 +28,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(api_router, prefix="/api/v1")
 
 
 async def _run_pipeline_script(extras: list[str] | None = None) -> int:
